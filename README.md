@@ -4,14 +4,23 @@ This project is a Virtual Current Sensor LUA script for the OpenTX
 
 Usage:
 
-1. Place the VCS.lua file on the SD/SCRIPTS/TELEMETRY
-2. Add the script as a telemetry (12/12) screen
-3. Enable Timer1 (2/12) as a TH% 00:00:00 timer
-![Screenshot][images/ss_th_procent.png]
+* Place the VCS.lua file on the SD/SCRIPTS/TELEMETRY
+* Add the script as a telemetry (12/12) screen
 
-4. Open the script with a long press on PAGE from standard screen
+![Screenshot](images/ss_lua_script.png)
+
+* Enable Timer1 (2/12) as a TH% 00:00:00 timer
+
+![Screenshot](images/ss_th_procent.png)
+
+* Open the script with a long press on PAGE from standard screen
+
+![Screenshot](images/ss_page1.png)
+![Screenshot](images/ss_page2.png)
 
 The timer should be reset by using a long ENTER press and reset the flight
+
+![Screenshot](images/ss_reset.png)
 
 I did rewrite some of the script, but all credit goes to the excellent KISS Telemetry script from DynamikAray 
 
