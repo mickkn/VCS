@@ -3,7 +3,7 @@
 -- https://github.com/DynamikArray/KISS_Battery_Monitor
 -------------------------------------------------------------------------
 
-local versionInfo = "Virtual Current Sensor - v0.2"
+local versionInfo = "Virtual Current Sensor - v0.1"
 
 local lastAlert = 0
 
