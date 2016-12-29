@@ -5,11 +5,11 @@ This project is a Virtual Current Sensor LUA script for the OpenTX
 Usage:
 
 * Place the VCS.lua file on the SD/SCRIPTS/TELEMETRY
-* Add the script as a telemetry (12/12) screen
+* Add the script as a telemetry screen
 
 ![Screenshot](images/ss_lua_script.png)
 
-* Enable Timer1 (2/12) as a TH% 00:00:00 timer
+* Enable Timer1 as a TH% 00:00:00 timer
 
 ![Screenshot](images/ss_th_procent.png)
 
