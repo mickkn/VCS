@@ -1,17 +1,18 @@
 -------------------------------------------------------------------------
--- By Mick 2017 - a mixture of the Kiss Telemetry script by DynamikArray
+-- By Mick 29-12-2016
+-- A virtual current sensor based on a throttle% timer in the OpenTX software
+-- All credit goes to DynamikArray
 -- https://github.com/DynamikArray/KISS_Battery_Monitor
 -------------------------------------------------------------------------
 
-local versionInfo = "Virtual Current Sensor - v0.1"
+local versionInfo = "Virtual Current Sensor - v0.2"
 
 local lastAlert = 0
+local blnMenuMode = 0         -- Start menu in screen one
 
-local endTime = 80
-
-local blnMenuMode = 0
-
-local alertPerc = 10
+local endTime = 80            -- Change if you want a different start end time
+local alertPerc = 10          -- Change if you want a different start percentage
+local TIMER = 'timer1'        -- Change if you want a different timer
 
 -- OpenTX 2.0 - Percent Unit = 8 // OpenTx 2.1 - Percent Unit = 13
 -- see: https://opentx.gitbooks.io/opentx-lua-reference-guide/content/general/playNumber.html
@@ -22,111 +23,79 @@ local percentUnit = 13
 ----------------------------------------------------------------
 -- Rounding Function
 local function round(val, decimal)
-    local exp = decimal and 10^decimal or 1
-    return math.ceil(val * exp - 0.5) / exp
+     local exp = decimal and 10^decimal or 1
+     return math.ceil(val * exp - 0.5) / exp
 end
 
 -- Alert and Logging of last Value Played
 local function playPerc(percVal)
-	playNumber(percVal,percentUnit)
-	lastAlert = percVal  -- Set lastAlert
+     playNumber(percVal, percentUnit)
+     lastAlert = percVal -- Set lastAlert
 end
 
--- critical alert and Logging of last Value Played
+-- Critical alert and Logging of last Value Played
 local function playCritical(percVal)
-	playFile("batcrit.wav")
-	lastAlert = percVal  -- Set lastAlert
+     playFile("batcrit.wav")
+     lastAlert = percVal -- Set lastAlert
 end
-
-function getTelemetryId(name)
-	field = getFieldInfo(name)
-
-	if getFieldInfo(name) then
-		return field.id
-	end
-
-	return -1
-end
-
 
 ----------------------------------------------------------------
---
+-- Playing alerts according to chosen percentage warning
 ----------------------------------------------------------------
 local function playAlerts()
 
-    percVal = 0
-    curTime = getValue('timer1')
+     --percVal = 0 -- Percentage value
+     curTime = getValue(TIMER) -- Get current time in seconds
 
-   -- if curTime ~= 0 then
-		percVal =  round(((curTime/endTime) * 100),0)
+	percVal =  round(((curTime/endTime) * 100),0) -- Percentage from current time
 
-		if percVal ~= lastAlert then
-			-- Alert the user we are in critical alert
-			if percVal > 100 then
-				playCritical(percVal)
-			elseif percVal > 90 and percVal < 100 then
-				playPerc(percVal)
-			elseif percVal % alertPerc == 0 then
-				playPerc(percVal)
-        end
-      end
-   -- end
-
+     if percVal ~= lastAlert then
+	     -- Alert the user we are in critical alert
+		if percVal > 100 then
+               playCritical(percVal)
+		elseif percVal > 90 and percVal < 100 then
+		     playPerc(percVal)
+		elseif percVal % alertPerc == 0 then
+		     playPerc(percVal)
+          end
+     end
+     
 end
 
 ----------------------------------------------------------------
---
+-- Update the percentage bar and time on screen
 ----------------------------------------------------------------
 
 local function drawAlerts()
 
-	percVal = 0
-
-	--RSSI = getValue(getTelemetryId("RSSI"))
-
-	--if RSSI == 0 then
-	--	model.resetTimer(0)
-	--end
-
-     curTime = getValue('timer1')
+     curTime = getValue(TIMER)
 
 	percVal =  round(((curTime/endTime) * 100),0)
 	lcd.drawText(5, 10, "USED: "..curTime.." s" , MIDSIZE)
-	lcd.drawText(90, 30, percVal.." %" , MIDSIZE)
+     lcd.drawText(90, 30, percVal.." %" , MIDSIZE)
 
 end
-
-
-local function doAlert()
-  playAlerts()
-  drawAlerts()
-end
-
-local function draw()
-  drawAlerts()
-end
-
 
 ----------------------------------------------------------------
---
+-- Initial function
 ----------------------------------------------------------------
 local function init_func()
-  doAlert()
+     playAlerts()
+     drawAlerts()
 end
 --------------------------------
 
-
 ----------------------------------------------------------------
---
+-- Background function
 ----------------------------------------------------------------
 local function bg_func()
-  playAlerts()
+     playAlerts()
 end
 --------------------------------
 
 
 ----------------------------------------------------------------
---
+-- Run function
 ----------------------------------------------------------------
 local function run_func(event)
 
@@ -138,29 +107,25 @@ local function run_func(event)
 		end
 
 		-- Respond to user KeyPresses for Setup
-		if event == EVT_PLUS_FIRST then
+		if (event == EVT_PLUS_FIRST) or (event == 68) then
 			alertPerc = alertPerc + 1
+			if alertPerc >= 100 then
+			     alertPerc = 100
+			end
 		end
 
-		-- Long Presses
-		if event == 68 then
-			alertPerc = alertPerc + 1
-		end
-
-		if event == EVT_MINUS_FIRST then
+		if (event == EVT_MINUS_FIRST) or (event == 69) then
 			alertPerc = alertPerc - 1
-		end
-
-		-- Long Presses
-		if event == 69 then
-			alertPerc = alertPerc - 1
+			if alertPerc <= 0 then
+			     alertPerc = 0
+			end
 		end
 
 		lcd.clear()
 
 		lcd.drawScreenTitle(versionInfo,2,2)
-		lcd.drawText(30,10, "Set Percentage Notification")
-		lcd.drawText(70,20,"Every "..alertPerc.." %",MIDSIZE)
+		lcd.drawText(30, 10, "Set Percentage Notification")
+		lcd.drawText(70, 20, "Every "..alertPerc.." %",MIDSIZE)
 		lcd.drawText(66, 35, "Use +/- to change",SMLSIZE)
 
 		lcd.drawText(53, 55, "Press [MENU] to return",SMLSIZE)
@@ -173,43 +138,35 @@ local function run_func(event)
 		end
 
 		-- Respond to user KeyPresses for Setup
-		if event == EVT_PLUS_FIRST then
+		if (event == EVT_PLUS_FIRST) or (event == 68) then
 			endTime = endTime + 1
-		end
-
-		if event == 68 then
-			endTime = endTime + 1
-		end
-
-		if event == EVT_MINUS_FIRST then
-			endTime = endTime - 1
-			if endTime < 1 then
-				endTime = 1
+			if endTime >= 9999 then
+				endTime = 9999
 			end
 		end
 
-		if event == 69 then
+		if (event == EVT_MINUS_FIRST) or (event == 69) then
 			endTime = endTime - 1
-			if endTime < 1 then
+			if endTime <= 1 then
 				endTime = 1
 			end
 		end
 
 
-		--Update our screen
+		--Update screen
 		lcd.clear()
 
 		lcd.drawScreenTitle(versionInfo,1,2)
 
 		lcd.drawGauge(6, 25, 70, 20, getValue('timer1') , endTime)
-		lcd.drawText(130, 10, "End time: ",MIDSIZE)
+		lcd.drawText(133, 10, "End Time : ",MIDSIZE)
 		lcd.drawText(160, 25, endTime,MIDSIZE)
 		lcd.drawText(130, 40, "Use +/- to change",SMLSIZE)
 
-		lcd.drawText(35, 55, "Press [MENU] for more options",SMLSIZE)
+		lcd.drawText(36, 55, "Press [MENU] for more options",SMLSIZE)
 
-		draw()
-		doAlert()
+		playAlerts()
+          drawAlerts()
 	end
 end
 --------------------------------
