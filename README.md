@@ -8,4 +8,4 @@ Open the script with a long press on PAGE from standard screen
 
 The timer should be reset by using a long press on standard screen and reset the flight or just timer1 (Will make a menu-option to reset soon)
 
-I did rewrite some of the script, but all credit goes to the excellent KISS Telemeetry script from DynamikAray ( https://github.com/DynamikArray/KISS_Battery_Monitor )
+I did rewrite some of the script, but all credit goes to the excellent KISS Telemetry script from DynamikAray ( https://github.com/DynamikArray/KISS_Battery_Monitor )
