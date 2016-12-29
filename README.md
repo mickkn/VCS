@@ -16,6 +16,9 @@ Usage:
 * Open the script with a long press on PAGE from standard screen
 
 ![Screenshot](images/ss_page1.png)
+
+* Change warning interval on page 2
+
 ![Screenshot](images/ss_page2.png)
 
 The timer should be reset by using a long ENTER press and reset the flight
