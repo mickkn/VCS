@@ -21,6 +21,10 @@ Usage:
 
 ![Screenshot](images/ss_page2.png)
 
+* Calculate Flight Time on page 3
+
+![Screenshot](images/ss_ftc.png)
+
 The timer should be reset by using a long ENTER press and reset the flight
 
 ![Screenshot](images/ss_reset.png)
