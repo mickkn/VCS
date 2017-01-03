@@ -29,6 +29,12 @@ The timer should be reset by using a long ENTER press and reset the flight
 
 ![Screenshot](images/ss_reset.png)
 
+How to determine the maximum current draw:
+
+* Fly a battery, charge it and note the charged mah and flight time
+* Max current draw = 1/(flight time/((charged mah/1000) * 3600))
+
+
 I did rewrite some of the script, but all credit goes to the excellent KISS Telemetry script from DynamikAray 
 
 ( https://github.com/DynamikArray/KISS_Battery_Monitor )
