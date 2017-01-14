@@ -1,17 +1,23 @@
--------------------------------------------------------------------------
--- By Mick 29-12-2016
+--------------------------------------------------------------------------------
+-- By Mick 17-01-2017
 -- A virtual current sensor based on a throttle% timer in the OpenTX software
 -- All credit goes to DynamikArray
 -- https://github.com/DynamikArray/KISS_Battery_Monitor
--------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-local versionInfo = "Virtual Current Sensor - v0.3"
+local versionInfo = "Virtual Current Sensor - v0.4"
 
 local lastAlert = 0
 local blnMenuMode = 0         -- Start menu in screen one
 
 local endTime = 0             -- Change if you want a different start end time
 local alertPerc = 10          -- Change if you want a different start percentage
+local alertCounter = 0        -- Counter for the interval array
+local alertEnable = 1         -- Error fix
+local alertDisable = 0        -- Full disable feature
+local alertInterval = {}      -- Array with alert intervals
+alertInterval[0] = 0          -- First place always zero
+
 local TIMER = 'timer1'        -- Change if you want a different timer
 
 local maxDraw = 0             -- Initialize max draw variable
@@ -24,9 +30,9 @@ local menuChoosen = 0         -- Initialize menu chosen in flight time calculato
 -- see: https://opentx.gitbooks.io/opentx-lua-reference-guide/content/general/playNumber.html
 local percentUnit = 13
 
-----------------------------------------------------------------
+-----------------------------------------------------------------
 -- Custom Functions & Utilities
-----------------------------------------------------------------
+-----------------------------------------------------------------
 -- Rounding Function
 local function round(val, decimal)
      local exp = decimal and 10^decimal or 1
@@ -45,81 +51,92 @@ local function playCritical(percVal)
      lastAlert = percVal -- Set lastAlert
 end
 
-----------------------------------------------------------------
+-----------------------------------------------------------------
 -- Playing alerts according to chosen percentage warning
-----------------------------------------------------------------
+-----------------------------------------------------------------
 local function playAlerts()
-
      curTime = getValue(TIMER) -- Get current time in seconds
 
-	percVal =  round(((curTime/endTime) * 100),0) -- Percentage from current time
-
-     if percVal ~= lastAlert then
-	     -- Alert the user we are in critical alert
-		if percVal > 100 then
-               playCritical(percVal)
-		elseif percVal > 90 and percVal < 100 then
-		     playPerc(percVal)
-		elseif percVal % alertPerc == 0 then
-		     playPerc(percVal)
-          end
+     if curTime == 0 then
+          alertCounter = 0
+          alertEnable = 1
      end
-     
+
+	percVal = round(((curTime/endTime) * 100),0) -- Percentage from current time
+
+     if alertDisable == 0 then
+          if percVal ~= lastAlert then
+	          -- Alert the user we are in critical alert
+	     	if percVal > 100 then
+                    playCritical(percVal)
+                    alertEnable = 0
+	     	elseif percVal > 90 and percVal < 100 then
+	     	     playPerc(percVal)
+	     	elseif alertEnable == 1 then     
+	     	     if percVal >= alertInterval[alertCounter] then
+	     	          playPerc(alertInterval[alertCounter])
+	     	          alertCounter = alertCounter + 1
+	     	     end
+               end
+          end
+     end     
 end
 
-----------------------------------------------------------------
+-----------------------------------------------------------------
 -- Update the percentage bar and time on screen
-----------------------------------------------------------------
-
+-----------------------------------------------------------------
 local function drawAlerts()
-
      curTime = getValue(TIMER)
 
 	percVal =  round(((curTime/endTime) * 100),0)
 	lcd.drawText(5, 10, "USED: "..curTime.." s" , MIDSIZE)
      lcd.drawText(90, 30, percVal.." %" , MIDSIZE)
-
 end
 
-----------------------------------------------------------------
+-----------------------------------------------------------------
 -- Initial function
-----------------------------------------------------------------
+-----------------------------------------------------------------
 local function init_func()
-
      maxDraw = model.getGlobalVariable(0, 0)  -- Get last maximum current draw in Amps
      battCap = model.getGlobalVariable(1, 0)*10  -- Get last battery capacity in mAh
      endTime = round((battCap/(maxDraw*1000))*60*60,0) -- Calculate end time
-     -----------------------------------------------------------
+     
+     ------------------------------------------------------------
      -- Initial values to some defaults if values is 0
-     -----------------------------------------------------------
+     ------------------------------------------------------------
      if (maxDraw == 0) then
           maxDraw = 67
           battCap = 1300
           endTime = round((battCap/(maxDraw*1000))*60*60,0)
      end
 
+     ------------------------------------------------------------
+     -- Initial alert interval values
+     ------------------------------------------------------------
+     if alertPerc > 0 then
+          for i=1, (100/alertPerc) do
+               alertInterval[i] = (alertInterval[i-1] + alertPerc)
+          end
+     end
+
      playAlerts()
      drawAlerts()
 end
---------------------------------
 
-----------------------------------------------------------------
+-----------------------------------------------------------------
 -- Background function
-----------------------------------------------------------------
+-----------------------------------------------------------------
 local function bg_func()
      playAlerts()
 end
---------------------------------
 
-
-----------------------------------------------------------------
+-----------------------------------------------------------------
 -- Run function
-----------------------------------------------------------------
+-----------------------------------------------------------------
 local function run_func(event)
-
-     ---------------------------------
+     ------------------------------------------------------------
      -- Flight time calculator
-     ---------------------------------
+     ------------------------------------------------------------
      if blnMenuMode == 2 then 
 
           if (event == 32) then -- Back to start screen
@@ -132,9 +149,9 @@ local function run_func(event)
           -- Calculate end time
           endTimeCalc = round((battCap/(maxDraw*1000))*60*60,0) -- in seconds
 
-          ----------------------------------------
+          -------------------------------------------------------
 		-- Respond to user key presses
-		----------------------------------------
+		-------------------------------------------------------
 		if (menuChoosen == 0) then -- No options is selected with ENTER
 		     if (event == EVT_MINUS_FIRST) or (event == 69) then
                     menuChoice = menuChoice + 1
@@ -197,25 +214,22 @@ local function run_func(event)
 		lcd.drawText(48,  10, "Flight Time Calculator")
 		lcd.drawText(15,  20, "Max current draw : ")
 		lcd.drawText(15,  30, "Battery capacity : ")
-		lcd.drawText(15,  40, "End time : ",MIDSIZE)
-		lcd.drawText(95, 40, ""..endTimeCalc.." s",MIDSIZE)
-
-          --test
-          --lcd.drawText(180, 42, ""..menuChoice..""..menuChoosen.."")
+		lcd.drawText(15,  40, "End time : ", MIDSIZE)
+		lcd.drawText(95,  40, ""..endTimeCalc.." s", MIDSIZE)
 
           if (menuChoosen == 1) then
                if (menuChoice == 2) then
                     lcd.drawText(160, 20, ""..maxDraw.." A")
                     lcd.drawText(160, 30, ""..battCap.." mAh")
-                    lcd.drawText(160, 40, "saved",MIDSIZE+INVERS+BLINK)
+                    lcd.drawText(160, 40, "saved", MIDSIZE+INVERS+BLINK)
                elseif (menuChoice == 1) then
                     lcd.drawText(160, 20, ""..maxDraw.." A")
                     lcd.drawText(160, 30, ""..battCap.." mAh",INVERS+BLINK)
-                    lcd.drawText(160, 40, "save",MIDSIZE)
+                    lcd.drawText(160, 40, "save", MIDSIZE)
                else
                     lcd.drawText(160, 20, ""..maxDraw.." A",INVERS+BLINK)
                     lcd.drawText(160, 30, ""..battCap.." mAh")
-                    lcd.drawText(160, 40, "save",MIDSIZE)
+                    lcd.drawText(160, 40, "save", MIDSIZE)
                end
           else
                if (menuChoice == 2) then
@@ -235,26 +249,36 @@ local function run_func(event)
           
 		lcd.drawText(53, 55, "Press [MENU] to return",SMLSIZE)
 
-     ---------------------------------
+     ------------------------------------------------------------
      -- Percentage menu
-     ---------------------------------
+     ------------------------------------------------------------
 	elseif (blnMenuMode == 1) then
 
 		if event == 32 then
 			--Take us out of menu mode
 			blnMenuMode = 2
+			
+			-- Update interval array
+			if alertPerc > 0 then
+			     for i=1, ((100/alertPerc)) do
+			          alertInterval[i] = alertInterval[i-1] + alertPerc
+			     end
+			     alertDisable = 0
+			else
+			     alertDisable = 1
+			end	
 		end
 
 		-- Respond to user KeyPresses for Setup
 		if (event == EVT_PLUS_FIRST) or (event == 68) then
-			alertPerc = alertPerc + 1
+			alertPerc = alertPerc + 5
 			if alertPerc >= 100 then
 			     alertPerc = 100
 			end
 		end
 
 		if (event == EVT_MINUS_FIRST) or (event == 69) then
-			alertPerc = alertPerc - 1
+			alertPerc = alertPerc - 5
 			if alertPerc <= 0 then
 			     alertPerc = 0
 			end
@@ -269,9 +293,9 @@ local function run_func(event)
 
 		lcd.drawText(36, 55, "Press [MENU] for more options",SMLSIZE)
 
-     ---------------------------------
+     ------------------------------------------------------------
      -- Info/start screen
-     ---------------------------------
+     ------------------------------------------------------------
 	else 
 		if event == 32 then
 			--Put us in menu mode
@@ -310,6 +334,5 @@ local function run_func(event)
           drawAlerts()
 	end
 end
---------------------------------
 
 return {run=run_func, background=bg_func, init=init_func  }
