@@ -10,15 +10,19 @@ local versionInfo = "Virtual Current Sensor - v0.4"
 local lastAlert = 0
 local blnMenuMode = 0         -- Start menu in screen one
 
-local endTime = 0             -- Change if you want a different start end time
+local endTime = 0             -- End time variable
 local alertPerc = 10          -- Change if you want a different start percentage
 local alertCounter = 0        -- Counter for the interval array
-local alertEnable = 1         -- Error fix
+local alertEnable = 1         -- Overflow error fix
 local alertDisable = 0        -- Full disable feature
 local alertInterval = {}      -- Array with alert intervals
 alertInterval[0] = 0          -- First place always zero
 
 local TIMER = 'timer1'        -- Change if you want a different timer
+
+local flyTime = 80
+local battCapChrg = 1000
+local maxDrawCalc = 0
 
 local maxDraw = 0             -- Initialize max draw variable
 local battCap = 0             -- Initialize battery capacity
@@ -135,12 +139,112 @@ end
 -----------------------------------------------------------------
 local function run_func(event)
      ------------------------------------------------------------
-     -- Flight time calculator
+     -- Max amp draw calculator
      ------------------------------------------------------------
-     if blnMenuMode == 2 then 
-
+     if blnMenuMode == 3 then
+          
           if (event == 32) then -- Back to start screen
 			blnMenuMode = 0
+			-- Reset menu
+			menuChoice = 0
+			menuChoosen = 0
+		end
+     
+          -- Calculate max current draw in amps
+          maxDrawCalc = round((1/(flyTime/((battCapChrg/1000) * 3600))),0) -- in Amps
+     
+          -------------------------------------------------------
+		-- Respond to user key presses
+		-------------------------------------------------------
+		if (menuChoosen == 0) then -- No options is selected with ENTER
+		     if (event == EVT_MINUS_FIRST) or (event == 69) then
+                    menuChoice = menuChoice + 1
+                    if (menuChoice > 1) then
+                         menuChoice = 0
+                    end
+		     end
+		     
+		     if (event == EVT_PLUS_FIRST) or (event == 68) then
+                    menuChoice = menuChoice - 1
+                    if (menuChoice < 0) then
+                         menuChoice = 1
+                    end
+		     end 
+		else -- A option is selected with ENTER
+		     if (event == EVT_PLUS_FIRST) or (event == 68) then
+		          if (menuChoice == 1) then
+		               battCapChrg = (battCapChrg + 1)
+		               if (battCapChrg > 6000) then
+		                    battCapChrg = 6000
+		               end
+		          elseif (menuChoice == 0) then
+		               flyTime = (flyTime + 1)
+		               if (flyTime > 400) then
+		                    flyTime = 400
+		               end
+		          end
+		     elseif (event == EVT_MINUS_FIRST) or (event == 69) then
+		          if (menuChoice == 1) then
+		               battCapChrg = battCapChrg - 1
+		               if (battCapChrg < 1) then
+		                    battCapChrg = 1
+		               end    
+		          elseif (menuChoice == 0) then
+		               flyTime = flyTime - 1
+		               if (flyTime < 1) then
+		                    flyTime = 1
+		               end
+		          end
+		     end
+		end
+
+          if (event == EVT_ENTER_BREAK) then -- Toggle selection
+               if (menuChoosen == 1) then
+                    menuChoosen = 0
+               else
+                    menuChoosen = 1
+               end
+          elseif (event == EVT_EXIT_BREAK) then -- Always exit selection
+               menuChoosen = 0
+          end
+     
+          lcd.clear()
+          lcd.drawScreenTitle(versionInfo,4,4)
+          
+          lcd.drawText(32,  10, "Max Current Draw Calculator")
+          lcd.drawText(15, 20, "TH% fly time : ")
+		lcd.drawText(15, 30, "Charged mAh : ")
+		lcd.drawText(15, 40, "Max current draw : ", MIDSIZE)
+		
+          if (menuChoosen == 1) then
+               if (menuChoice == 1) then
+                    lcd.drawText(160, 20, ""..flyTime.." s")
+                    lcd.drawText(160, 30, ""..battCapChrg.." mAh",INVERS+BLINK)
+               else
+                    lcd.drawText(160, 20, ""..flyTime.." s",INVERS+BLINK)
+                    lcd.drawText(160, 30, ""..battCapChrg.." mAh")
+               end
+          else
+               if (menuChoice == 1) then
+                    lcd.drawText(160, 20, ""..flyTime.." s")
+                    lcd.drawText(160, 30, ""..battCapChrg.." mAh",INVERS)
+               else
+                    lcd.drawText(160, 20, ""..flyTime.." s",INVERS)
+                    lcd.drawText(160, 30, ""..battCapChrg.." mAh")
+               end
+          end
+          
+          lcd.drawText(160, 40, ""..maxDrawCalc.." A",MIDSIZE)
+          
+          lcd.drawText(53, 55, "Press [MENU] to return",SMLSIZE)
+          
+     ------------------------------------------------------------
+     -- Flight time calculator
+     ------------------------------------------------------------
+     elseif blnMenuMode == 2 then 
+
+          if (event == 32) then -- To amp draw calculator
+			blnMenuMode = 3
 			-- Reset menu
 			menuChoice = 0
 			menuChoosen = 0
@@ -210,7 +314,8 @@ local function run_func(event)
 
 		lcd.clear()
 
-		lcd.drawScreenTitle(versionInfo,3,3)
+		lcd.drawScreenTitle(versionInfo,3,4)
+		
 		lcd.drawText(48,  10, "Flight Time Calculator")
 		lcd.drawText(15,  20, "Max current draw : ")
 		lcd.drawText(15,  30, "Battery capacity : ")
@@ -247,15 +352,14 @@ local function run_func(event)
                end
           end
           
-		lcd.drawText(53, 55, "Press [MENU] to return",SMLSIZE)
+		lcd.drawText(36, 55, "Press [MENU] for more options",SMLSIZE)
 
      ------------------------------------------------------------
      -- Percentage menu
      ------------------------------------------------------------
 	elseif (blnMenuMode == 1) then
 
-		if event == 32 then
-			--Take us out of menu mode
+		if event == 32 then -- To flight time calculator
 			blnMenuMode = 2
 			
 			-- Update interval array
@@ -286,10 +390,10 @@ local function run_func(event)
 
 		lcd.clear()
 
-		lcd.drawScreenTitle(versionInfo,2,3)
+		lcd.drawScreenTitle(versionInfo,2,4)
 		lcd.drawText(30, 10, "Set Percentage Notification")
-		lcd.drawText(70, 20, "Every "..alertPerc.." %",MIDSIZE)
-		lcd.drawText(66, 35, "Use +/- to change",SMLSIZE)
+		lcd.drawText(70, 23, "Every "..alertPerc.." %",MIDSIZE)
+		lcd.drawText(66, 38, "Use +/- to change",SMLSIZE)
 
 		lcd.drawText(36, 55, "Press [MENU] for more options",SMLSIZE)
 
@@ -297,8 +401,7 @@ local function run_func(event)
      -- Info/start screen
      ------------------------------------------------------------
 	else 
-		if event == 32 then
-			--Put us in menu mode
+		if event == 32 then -- To percentage menu
 			blnMenuMode = 1
 		end
 
@@ -321,7 +424,7 @@ local function run_func(event)
 		--Update screen
 		lcd.clear()
 
-		lcd.drawScreenTitle(versionInfo,1,3)
+		lcd.drawScreenTitle(versionInfo,1,4)
 
 		lcd.drawGauge(6, 25, 70, 20, getValue('timer1') , endTime)
 		lcd.drawText(135, 10, "End time : ",MIDSIZE)
