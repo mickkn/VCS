@@ -29,7 +29,7 @@ Usage:
 
 ![Screenshot](images/ss_mcd.png)
 
-* Fly a battery, charge it and use the values in this calculator 
+* Fly a battery with the TH% timer, charge it and use the values in this calculator 
 
 The timer should be reset by using a long ENTER press and reset the flight
 
