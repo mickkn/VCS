@@ -38,6 +38,6 @@ The timer should be reset by using a long ENTER press and reset the flight
 
 
 
-I did rewrite some of the script, but all credit goes to the excellent KISS Telemetry script from DynamikAray 
+I did rewrite some (a lot) of the script, but all credit goes to the excellent KISS Telemetry script from DynamikAray 
 
 ( https://github.com/DynamikArray/KISS_Battery_Monitor )
