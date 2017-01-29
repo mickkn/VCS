@@ -1,11 +1,11 @@
 --------------------------------------------------------------------------------
--- By Mick 17-01-2017
+-- By Mick 29-01-2017
 -- A virtual current sensor based on a throttle% timer in the OpenTX software
 -- All credit goes to DynamikArray
 -- https://github.com/DynamikArray/KISS_Battery_Monitor
 --------------------------------------------------------------------------------
 
-local versionInfo = "Virtual Current Sensor - v0.4"
+local versionInfo = "Virtual Current Sensor - v0.5"
 
 local lastAlert = 0
 local blnMenuMode = 0         -- Start menu in screen one
@@ -46,6 +46,7 @@ end
 -- Alert and Logging of last Value Played
 local function playPerc(percVal)
      playNumber(percVal, percentUnit)
+     playFile("/SOUNDS/en/system/percent0.wav") -- Only for OpenTX 2.2
      lastAlert = percVal -- Set lastAlert
 end
 
