@@ -1,4 +1,4 @@
-This project is a Virtual Current Sensor LUA script for the OpenTX
+This project is a Virtual Current Sensor LUA script for the OpenTX. The script is based on using a Throttle percent timer and a re-wroten KISS telemetry script.
 
 * This project is mainly for Quadcopters without telemetry
 
